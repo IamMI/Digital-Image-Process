@@ -77,8 +77,11 @@ def get_m(P=np.random.randn(80, 12)):
 
     eigenvalues, eigenvectors = np.linalg.eigh(P_T_P)
 
+    # print('Eigenvalues:',eigenvalues)
+    
     # min_eigenvalue_index = np.argmin(eigenvalues)  
     # min_eigenvalue = eigenvalues[min_eigenvalue_index] 
+    # min_eigenvector = eigenvectors[:, min_eigenvalue_index] 
     min_eigenvector = eigenvectors[:, 3] 
 
     # print("最小特征值:", min_eigenvalue)

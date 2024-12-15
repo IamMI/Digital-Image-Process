@@ -5,6 +5,7 @@ import cv2
 import os
 import copy
 import numpy as np
+from scipy.optimize import least_squares
 
 def get_corner_pixel(image, chessboard_size=(5,8)):
     """_summary_
@@ -95,57 +96,67 @@ def get_M(image):
     row3 = m[8:]
     M = np.vstack((row1, row2, row3))
     return M    
+
+def world_to_camera(world_points, R, t):
+    return np.dot(R, world_points.T).T + t
+
+def distort_points(k1, k2, k3, points, mtx, R, t):
+    # 1. Transform from world to camera
+    camera_points = world_to_camera(points, R, t)
     
+    # 2. Project to image plane
+    x_c, y_c, z_c = camera_points.T
+    x_ideal = (x_c / z_c) * mtx[0, 0] + mtx[0, 2]  # fx * (x_c / z_c) + cx
+    y_ideal = (y_c / z_c) * mtx[1, 1] + mtx[1, 2]  # fy * (y_c / z_c) + cy
     
-def main(image):
-    M = get_M(image)
+    # 3. 应用径向畸变
+    r_squared = x_ideal**2 + y_ideal**2
+    r = np.sqrt(r_squared)
     
-    A = M[:, :3]  # 提取 A 矩阵 (3x3)
-    b = M[:, 3]   # 提取 b 向量 (3,)
-
-    # 分解 A 的行向量
-    a1, a2, a3 = A
-
-    # 计算 rho
-    rho = 1 / np.linalg.norm(a3)
-
-    # 计算 cx 和 cy
-    cx = rho**2 * np.dot(a1, a3)
-    cy = rho**2 * np.dot(a2, a3)
-
-    # 计算 theta
-    a1_cross_a3 = np.cross(a1, a3)
-    a2_cross_a3 = np.cross(a2, a3)
-    theta = np.arccos(
-        np.dot(a1_cross_a3, a2_cross_a3) /
-        (np.linalg.norm(a1_cross_a3) * np.linalg.norm(a2_cross_a3))
-    )
-
-    # 计算 alpha 和 beta
-    alpha = rho**2 * np.linalg.norm(a1_cross_a3) * np.sin(theta)
-    beta = rho**2 * np.linalg.norm(a2_cross_a3) * np.sin(theta)
-
-    # 计算外参 r1, r2, r3, T
-    r1 = a2_cross_a3 / np.linalg.norm(a2_cross_a3)
-    r3 = rho * a3
-    r2 = np.cross(r3, r1)
-    K_inv_b = np.linalg.inv(A) @ b
-    T = rho * K_inv_b
-
-    # 打印结果
-    print("内参:")
-    print(f"rho: {rho}, cx: {cx}, cy: {cy}, theta: {theta}, alpha: {alpha}, beta: {beta}")
-    print("\n外参:")
-    print(f"r1: {r1}, r2: {r2}, r3: {r3}, T: {T}")
+    # 4. 计算畸变后的坐标
+    x_distorted = x_ideal * (1 + k1 * r_squared + k2 * r_squared**2 + k3 * r_squared**3)
+    y_distorted = y_ideal * (1 + k1 * r_squared + k2 * r_squared**2 + k3 * r_squared**3)
     
-    
+    return np.vstack([x_distorted, y_distorted]).T
+
+  
+def get_distorted(K, R, T, image):
+    """ Using optimization method to obtain distorted coefficient
+
+    Args:
+        K (np.ndarray): Intrinsic parameters
+        R (np.ndarray): Rotation Matrix
+        T (np.ndarray): Translation Matrix
+        image (np.ndarray): Image
         
+    Return: Distorted coefficients
+    """
+    assert type(K)==np.ndarray and type(R)==np.ndarray and type(T)==np.ndarray
+    
+    image = copy.deepcopy(image)
+    pixel = get_corner_pixel(image)
+    world = get_corner_world()
+
+    def cost_function(params, obj_points, img_points, mtx):
+        k1, k2, k3 = params
+        
+        distorted_points = distort_points(k1, k2, k3, img_points, mtx, R, T)
+        
+        error = distorted_points - img_points
+        return error.ravel()
+    
+    
+    # Initial guess
+    initial_guess = [0.0, 0.0, 0.0]
+    # Solve
+    result = least_squares(cost_function, initial_guess, args=(world, pixel, K))
+    
+    k1_opt, k2_opt, k3_opt = result.x
+    print(f"Optimized radial distortion coefficients: k1={k1_opt}, k2={k2_opt}, k3={k3_opt}")
+    return k1_opt, k2_opt, k3_opt
     
 
-if __name__=='__main__':
-    # 加载棋盘格图片
-    image = cv2.imread('./Final project/chessboard.jpg')
 
-    # 转换为灰度图像
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    main(gray)
+
+    
+    

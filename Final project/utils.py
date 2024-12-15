@@ -68,9 +68,9 @@ def get_P(image):
         row_2 = np.vstack((np.zeros((4,1)), P_i.T, -v_i*P_i.T)) 
         result.append(np.hstack((row_1, row_2)))  
 
-    # 将结果拼接成最终矩阵 (80, 6)
+    
     result_matrix = np.hstack(result)
-    print('result_matrix.shape:', result_matrix.T.shape)  # 输出 (80, 6)
+    print('result_matrix.shape:', result_matrix.T.shape)  
     return result_matrix.T
     
 def get_m(P=np.random.randn(80, 12)):
@@ -83,7 +83,7 @@ def get_m(P=np.random.randn(80, 12)):
     # min_eigenvalue_index = np.argmin(eigenvalues)  
     # min_eigenvalue = eigenvalues[min_eigenvalue_index] 
     # min_eigenvector = eigenvectors[:, min_eigenvalue_index] 
-    min_eigenvector = eigenvectors[:, 3] 
+    min_eigenvector = eigenvectors[:, 3]
 
     # print("最小特征值:", min_eigenvalue)
     # print("最小特征值对应的特征向量:", min_eigenvector)
@@ -98,6 +98,9 @@ def get_M(image):
     return M    
 
 def world_to_camera(world_points, R, t):
+    if world_points.shape[-1] == 4:
+        world_points = world_points[:, :-1]
+        
     return np.dot(R, world_points.T).T + t
 
 def distort_points(k1, k2, k3, points, mtx, R, t):
@@ -137,12 +140,12 @@ def get_distorted(K, R, T, image):
     pixel = get_corner_pixel(image)
     world = get_corner_world()
 
-    def cost_function(params, obj_points, img_points, mtx):
+    def cost_function(params, world, pixel, mtx):
         k1, k2, k3 = params
         
-        distorted_points = distort_points(k1, k2, k3, img_points, mtx, R, T)
+        distorted_points = distort_points(k1, k2, k3, world, mtx, R, T)
         
-        error = distorted_points - img_points
+        error = distorted_points - pixel
         return error.ravel()
     
     

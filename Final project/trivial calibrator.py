@@ -9,6 +9,44 @@ import math
 
 import utils 
 
+def project_world_to_image(R, T, K, image):
+    """
+    将世界坐标点投影到图片中，并绘制红色圈圈。
+    
+    参数:
+    R (ndarray): 相机的旋转矩阵 (3x3)。
+    T (ndarray): 相机的位移向量 (3, )。
+    K (ndarray): 相机的内参矩阵 (3x3)。
+    image (ndarray): 输入的棋盘格图像。
+    
+    返回:
+    image_with_projection (ndarray): 绘制了红色圆圈的图像。
+    """
+    world_points_homogeneous = utils.get_corner_world()
+    camera_points = np.dot(R, world_points_homogeneous[:, :3].T).T + T  # (N, 3)
+    
+    # 将相机坐标投影到图像平面
+    # 使用内参矩阵 K 进行投影，投影公式: [x_img, y_img] = K * [x_c / z_c, y_c / z_c]
+    x_c, y_c, z_c = camera_points.T
+    x_img = (x_c / z_c) * K[0, 0] + K[0, 2]  # fx * (x_c / z_c) + cx
+    y_img = (y_c / z_c) * K[1, 1] + K[1, 2]  # fy * (y_c / z_c) + cy
+    
+    # 将投影结果转化为整数坐标
+    image_points = np.vstack([x_img, y_img]).T
+    image_points = np.round(image_points).astype(int)  # 转为整数像素坐标
+    
+    # 在图像上绘制红色圆圈
+    image_with_projection = image.copy()
+    for point in image_points:
+        cv2.circle(image_with_projection, tuple(point), radius=5, color=(255, 255, 255), thickness=-1)  # 红色圈
+
+    plt.imshow(image_with_projection, cmap='gray')
+    plt.show()
+    
+    
+    return image_with_projection
+
+
 def main(image):
     M = utils.get_M(image)
     
@@ -41,8 +79,11 @@ def main(image):
     r1 = a2_cross_a3 / np.linalg.norm(a2_cross_a3)
     r3 = rho * a3
     r2 = np.cross(r3, r1)
-    K_inv_b = np.linalg.inv(A) @ b
-    T = rho * K_inv_b
+    R = np.stack([r1, r2, r3], axis=1).T
+    # K
+    K = np.array([[alpha, -alpha/math.tan(theta), cx], [0, beta/math.sin(theta), cy], [0, 0, 1]])
+    K_inv_b = np.linalg.pinv(K)
+    T = rho * K_inv_b @ b
 
     # 打印结果
     print("内参:")
@@ -50,14 +91,17 @@ def main(image):
     print("\n外参:")
     print(f"r1: {r1}, r2: {r2}, r3: {r3}, T: {T}")
     
-    K = np.array([alpha, -alpha/math.tan(theta), cx], [0, beta/math.sin(theta), cy], [0, 0, 1])
-    R = np.stack([r1, r2, r3], axis=1)
-    return K, R, T
+    
+    
+    
+    project_world_to_image(R, T, K, image)
+    
+    
 
 
 if __name__=='__main__':
     # 加载棋盘格图片
-    image = cv2.imread('./Final project/chessboard.jpg')
+    image = cv2.imread('./chessboard.jpg')
 
     # 转换为灰度图像
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)

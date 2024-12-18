@@ -67,7 +67,7 @@ def main(image):
     a1_cross_a3 = np.cross(a1, a3)
     a2_cross_a3 = np.cross(a2, a3)
     theta = np.arccos(
-        np.dot(a1_cross_a3, a2_cross_a3) /
+        -np.dot(a1_cross_a3, a2_cross_a3) /
         (np.linalg.norm(a1_cross_a3) * np.linalg.norm(a2_cross_a3))
     )
 

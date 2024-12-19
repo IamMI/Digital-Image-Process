@@ -82,7 +82,7 @@ def main(image):
     R = np.stack([r1, r2, r3], axis=1).T
     # K
     K = np.array([[alpha, -alpha/math.tan(theta), cx], [0, beta/math.sin(theta), cy], [0, 0, 1]])
-    K_inv_b = np.linalg.pinv(K)
+    K_inv_b = np.linalg.inv(K)
     T = rho * K_inv_b @ b
 
     # 打印结果
@@ -91,17 +91,17 @@ def main(image):
     print("\n外参:")
     print(f"r1: {r1}, r2: {r2}, r3: {r3}, T: {T}")
     
-    
-    
-    
-    project_world_to_image(R, T, K, image)
+    print("K:\n", K)
+    print("R:\n", R)
+    print("T:\n", T)
+    # project_world_to_image(R, T, K, image)
     
     
 
 
 if __name__=='__main__':
     # 加载棋盘格图片
-    image = cv2.imread('./chessboard.jpg')
+    image = cv2.imread('./Final project/chessboard.jpg')
 
     # 转换为灰度图像
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)

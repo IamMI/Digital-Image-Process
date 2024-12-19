@@ -73,7 +73,7 @@ def get_P(image):
     print('result_matrix.shape:', result_matrix.T.shape)  
     return result_matrix.T
     
-def get_m(P=np.random.randn(80, 12)):
+def get_m(P):
     P_T_P = P.T @ P
 
     eigenvalues, eigenvectors = np.linalg.eigh(P_T_P)

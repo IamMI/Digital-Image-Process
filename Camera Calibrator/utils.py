@@ -132,18 +132,53 @@ def compute_B(H_list):
     B[2 ,2] = b[5]
     return B
     
-def get_B(image_list):
+def get_B(image_name_list):
+    image_list = []
+    for name in image_name_list:
+        image = cv2.imread(name)
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        image_list.append(gray)
     
+    H_list = []
+    for image in image_list:
+        H = get_H(image)
+        H_list.append(H)
     
+    B = compute_B(H_list)
+    
+def get_A(B):
+    # 提取 B 矩阵的元素  
+    B11 = B[0, 0]  
+    B12 = B[0, 1]  
+    B13 = B[0, 2]  
+    B21 = B[1, 0]  
+    B22 = B[1, 1]  
+    B23 = B[1, 2]  
+    B31 = B[2, 0]  
+    B32 = B[2, 1]  
+    B33 = B[2, 2]  
+
+    # 计算内参  
+    v0 = (B12 * B13 - B11 * B23) / (B11 * B22 - B12**2)  
+    alpha = np.sqrt(1 / B11)  
+    beta = np.sqrt(B11 / (B11 * B22 - B12**2))  
+    gamma = -B12 * alpha**2 * beta  
+    u0 = gamma * v0 / beta - B13 * alpha**2 
+
+    # 生成 A 矩阵  
+    A = np.array([[alpha, gamma, u0],  
+                [0, beta, v0],  
+                [0, 0, 1]])  
+
+    # 输出 A 矩阵  
+    print("相机内参矩阵 A:")  
+    print(A)  
+    return A
     
     
 
 if __name__=='__main__':
-    # 加载棋盘格图片
-    image = cv2.imread('./Final project/chessboard.jpg')
-
-    # 转换为灰度图像
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    
     get_H(gray)
 
 

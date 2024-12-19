@@ -36,9 +36,9 @@ def project_world_to_image(R, T, K, image):
     for point in image_points:
         cv2.circle(image_with_projection, tuple(point), radius=5, color=(255, 255, 255), thickness=-1)  # 红色圈
 
-    plt.imshow(image_with_projection, cmap='gray')
-    plt.show()
-    
+    # plt.imshow(image_with_projection, cmap='gray')
+    # plt.show()
+    plt.imsave('./Camera Calibrator/chessboard/image_with_projection.png', image_with_projection, cmap='gray')
     
     return image_with_projection
 
@@ -71,7 +71,8 @@ def main(image_name_list):
     print("外参矩阵E:")
     print(E_list[0])
     
-    project_world_to_image(E_list[0][:3, :3], E_list[0][:3, 3], A, image_list[0])
+    # project_world_to_image(E_list[0][:3, :3], E_list[0][:3, 3], A, image_list[0])
+    utils.get_distorted(A, E_list[0][:3, :3], E_list[0][:3, 3], image)
     
     
     

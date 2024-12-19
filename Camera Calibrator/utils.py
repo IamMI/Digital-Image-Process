@@ -175,11 +175,30 @@ def get_A(B):
     print(A)  
     return A
     
+def compute_extrinsics(H_list, A):  
+    # 计算内参矩阵的逆，即 A^{-1}  
+    A_inv = np.linalg.inv(A)  
     
+    E_list = []
+    for H in H_list:
+        extrinsic_matrix = A_inv @ H  # 使用 @ 符号进行矩阵乘法  
+        # 提取 R 和 T  
+        R1 = extrinsic_matrix[:, 0]  # 第一列  
+        R2 = extrinsic_matrix[:, 1]  # 第二列  
+        T = extrinsic_matrix[:, 2]    # 第三列，平移向量  
+        
+        # 计算 R3，通过 R1 和 R2 的叉乘  
+        R3 = np.cross(R1, R2)  
+        
+        # 合成完整的外参矩阵 (R | T)  
+        R = np.column_stack((R1, R2, R3))  # 将 R1, R2, R3 组成旋转矩阵  
+        extrinsic_matrix_complete = np.column_stack((R, T))  
+        extrinsic_matrix_complete = np.row_stack((extrinsic_matrix_complete, [0, 0, 0, 1]))  # 添加最后一行 [0, 0, 0, 1]  
+        E_list.append(extrinsic_matrix_complete)
+    
+    return E_list
 
-if __name__=='__main__':
-    
-    get_H(gray)
+
 
 
     

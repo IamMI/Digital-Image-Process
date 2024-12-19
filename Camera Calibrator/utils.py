@@ -132,19 +132,6 @@ def compute_B(H_list):
     B[2 ,2] = b[5]
     return B
     
-def get_B(image_name_list):
-    image_list = []
-    for name in image_name_list:
-        image = cv2.imread(name)
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        image_list.append(gray)
-    
-    H_list = []
-    for image in image_list:
-        H = get_H(image)
-        H_list.append(H)
-    
-    B = compute_B(H_list)
     
 def get_A(B):
     # 提取 B 矩阵的元素  
@@ -198,8 +185,36 @@ def compute_extrinsics(H_list, A):
     
     return E_list
 
+def main(image_name_list):
+    # Get image List
+    image_list = []
+    for name in image_name_list:
+        image = cv2.imread(name)
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        image_list.append(gray)
+        
+    # Get H List
+    H_list = []
+    for image in image_list:
+        H = get_H(image)
+        H_list.append(H)
+        
+    # Get B
+    B = compute_B(H_list)
+    
+    # Get A
+    A = get_A(B)
+    
+    # Get Extrinsics Matrix
+    E = compute_extrinsics(H_list, A)
+    
+    
+    
 
 
+if __name__ == '__main__':
+    image_name_list = ['./Camera Calibrator/chessboard1.jpg', './Camera Calibrator/chessboard2.jpg', './Camera Calibrator/chessboard3.jpg']
+    main(image_name_list)
 
     
     

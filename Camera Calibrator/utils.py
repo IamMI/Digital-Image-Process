@@ -182,37 +182,72 @@ def compute_extrinsics(H_list, A):
     
     return E_list
 
-def main(image_name_list):
-    # Get image List
-    image_list = []
-    for name in image_name_list:
-        image = cv2.imread(name)
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        image_list.append(gray)
+def world_to_camera(world_points, R, t):
+    if world_points.shape[-1] == 4:
+        world_points = world_points[:, :-1]
         
-    # Get H List
-    H_list = []
-    for image in image_list:
-        H = get_H(image)
-        H_list.append(H)
+    return np.dot(R, world_points.T).T + t
+
+def distort_points(k1, k2, k3, points, mtx, R, t):
+    # 1. Transform from world to camera
+    camera_points = world_to_camera(points, R, t)
+    
+    # 2. Project to image plane
+    x_c, y_c, z_c = camera_points.T
+    x_ideal = (x_c / z_c) * mtx[0, 0] + mtx[0, 2]  # fx * (x_c / z_c) + cx
+    y_ideal = (y_c / z_c) * mtx[1, 1] + mtx[1, 2]  # fy * (y_c / z_c) + cy
+    
+    # 3. 应用径向畸变
+    r_squared = x_ideal**2 + y_ideal**2
+    r = np.sqrt(r_squared)
+    
+    # 4. 计算畸变后的坐标
+    x_distorted = x_ideal * (1 + k1 * r_squared + k2 * r_squared**2 + k3 * r_squared**3)
+    y_distorted = y_ideal * (1 + k1 * r_squared + k2 * r_squared**2 + k3 * r_squared**3)
+    
+    return np.vstack([x_distorted, y_distorted]).T
+
+  
+def get_distorted(K, R, T, image):
+    """ Using optimization method to obtain distorted coefficient
+
+    Args:
+        K (np.ndarray): Intrinsic parameters
+        R (np.ndarray): Rotation Matrix
+        T (np.ndarray): Translation Matrix
+        image (np.ndarray): Image
         
-    # Get B
-    B = compute_B(H_list)
+    Return: Distorted coefficients
+    """
+    assert type(K)==np.ndarray and type(R)==np.ndarray and type(T)==np.ndarray
     
-    # Get A
-    A = get_A(B)
+    image = copy.deepcopy(image)
+    pixel = get_corner_pixel(image)
+    world = get_corner_world()
+
+    def cost_function(params, world, pixel, mtx):
+        k1, k2, k3 = params
+        
+        distorted_points = distort_points(k1, k2, k3, world, mtx, R, T)
+        
+        error = distorted_points - pixel
+        return error.ravel()
     
-    # Get Extrinsics Matrix
-    E_list = compute_extrinsics(H_list, A)
     
-    print(A)
-    print(E_list[0])
+    # Initial guess
+    initial_guess = [0.0, 0.0, 0.0]
+    # Solve
+    result = least_squares(cost_function, initial_guess, args=(world, pixel, K))
+    
+    k1_opt, k2_opt, k3_opt = result.x
+    print(f"Optimized radial distortion coefficients: k1={k1_opt}, k2={k2_opt}, k3={k3_opt}")
+    return k1_opt, k2_opt, k3_opt
+
+
     
 
 
-if __name__ == '__main__':
-    image_name_list = ['./Camera Calibrator/chessboard1.jpg', './Camera Calibrator/chessboard2.jpg', './Camera Calibrator/chessboard3.jpg']
-    main(image_name_list)
+
 
     
     

@@ -4,7 +4,7 @@ import glob
 
 # 棋盘格参数
 chessboard_size = (8, 5)  # 棋盘格内角点数（8列，5行）
-square_size = 26  # 方格边长（单位：例如 1mm，可以根据实际单位调整）
+square_size = 1.0  # 方格边长（单位：例如 1mm，可以根据实际单位调整）
 
 # 世界坐标系中的棋盘格角点坐标（Z=0）
 objp = np.zeros((chessboard_size[0] * chessboard_size[1], 3), np.float32)
@@ -43,7 +43,16 @@ if len(objpoints) > 0:
     # 打印标定结果
     print("相机内参矩阵 (camera_matrix):\n", camera_matrix)
     print("\n畸变系数 (dist_coeffs):\n", dist_coeffs.ravel())
-    print("\n旋转向量 (rvecs):", len(rvecs), "个")
-    print("\n平移向量 (tvecs):", len(tvecs), "个")
+
+    # 打印每张图片对应的外参矩阵
+    for i in range(len(rvecs)):
+        # 将旋转向量转换为旋转矩阵
+        R, _ = cv2.Rodrigues(rvecs[i])
+        
+        # 获取外参矩阵 [R|t]
+        t = tvecs[i].reshape(3, 1)  # 将平移向量调整为列向量
+        extrinsic_matrix = np.hstack((R, t))
+        if i == 1:
+            print(f"\n图片 {i+1} 的外参矩阵 (Extrinsic Matrix):\n", extrinsic_matrix)
 else:
     print("未找到足够的棋盘格角点进行标定！")

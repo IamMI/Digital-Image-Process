@@ -100,13 +100,14 @@ def compute_B(H_list):
         H2 = H[1, :]  # H 的第二行  
         H3 = H[2, :]  # H 的第三行  
         
-        i = 1
-        j = 2
-        v_12 = np.array([H1[i]*H1[j], H1[i]*H2[j]+H2[i]*H1[j], H2[i]*H2[j], H1[i]*H3[j]+H3[i]*H1[j], H2[i]*H3[j]+H3[i]*H2[j], H3[i]*H3[j]])
+        i = 0
         j = 1
+        v_12 = np.array([H1[i]*H1[j], H1[i]*H2[j]+H2[i]*H1[j], H2[i]*H2[j], H1[i]*H3[j]+H3[i]*H1[j], H2[i]*H3[j]+H3[i]*H2[j], H3[i]*H3[j]])
+        i = 0
+        j = 0
         v_11 = np.array([H1[i]*H1[j], H1[i]*H2[j]+H2[i]*H1[j], H2[i]*H2[j], H1[i]*H3[j]+H3[i]*H1[j], H2[i]*H3[j]+H3[i]*H2[j], H3[i]*H3[j]])
-        i = 2
-        j = 2
+        i = 1
+        j = 1
         v_22 = np.array([H1[i]*H1[j], H1[i]*H2[j]+H2[i]*H1[j], H2[i]*H2[j], H1[i]*H3[j]+H3[i]*H1[j], H2[i]*H3[j]+H3[i]*H2[j], H3[i]*H3[j]])
         
         v_matrix_list.append(v_12)
@@ -206,7 +207,7 @@ def main(image_name_list):
     A = get_A(B)
     
     # Get Extrinsics Matrix
-    E = compute_extrinsics(H_list, A)
+    E_list = compute_extrinsics(H_list, A)
     
     
     

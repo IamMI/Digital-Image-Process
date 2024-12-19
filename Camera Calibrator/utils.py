@@ -157,10 +157,6 @@ def get_A(B):
     A = np.array([[alpha, gamma, u0],  
                 [0, beta, v0],  
                 [0, 0, 1]])  
-
-    # 输出 A 矩阵  
-    print("相机内参矩阵 A:")  
-    print(A)  
     return A
     
 def compute_extrinsics(H_list, A):  
@@ -209,7 +205,8 @@ def main(image_name_list):
     # Get Extrinsics Matrix
     E_list = compute_extrinsics(H_list, A)
     
-    
+    print(A)
+    print(E_list[0])
     
 
 

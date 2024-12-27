@@ -167,9 +167,10 @@ def compute_extrinsics(H_list, A):
     for H in H_list:
         extrinsic_matrix = A_inv @ H  # 使用 @ 符号进行矩阵乘法  
         # 提取 R 和 T  
-        R1 = extrinsic_matrix[:, 0]  # 第一列  
-        R2 = extrinsic_matrix[:, 1]  # 第二列  
-        T = extrinsic_matrix[:, 2]    # 第三列，平移向量  
+        rho = np.linalg.norm(extrinsic_matrix[:, 0])
+        R1 = extrinsic_matrix[:, 0]/rho # 第一列  
+        R2 = extrinsic_matrix[:, 1]/rho # 第二列  
+        T = extrinsic_matrix[:, 2]/rho    # 第三列，平移向量  
         
         # 计算 R3，通过 R1 和 R2 的叉乘  
         R3 = np.cross(R1, R2)  

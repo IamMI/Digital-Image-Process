@@ -35,14 +35,14 @@ for fname in images:
         cv2.waitKey(500)
 
 cv2.destroyAllWindows()
-
+np.set_printoptions(precision=2)
 # 相机标定
 if len(objpoints) > 0:
     ret, camera_matrix, dist_coeffs, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
     
     # 打印标定结果
-    print("相机内参矩阵 (camera_matrix):\n", camera_matrix)
-    print("\n畸变系数 (dist_coeffs):\n", dist_coeffs.ravel())
+    print("内参矩阵A:\n", camera_matrix)
+    # print("\n畸变系数 (dist_coeffs):\n", dist_coeffs.ravel())
 
     # 打印每张图片对应的外参矩阵
     for i in range(len(rvecs)):
@@ -52,7 +52,8 @@ if len(objpoints) > 0:
         # 获取外参矩阵 [R|t]
         t = tvecs[i].reshape(3, 1)  # 将平移向量调整为列向量
         extrinsic_matrix = np.hstack((R, t))
-        if i == 1:
-            print(f"\n图片 {i+1} 的外参矩阵 (Extrinsic Matrix):\n", extrinsic_matrix)
+        extrinsic_matrix_complete = np.row_stack((extrinsic_matrix, [0, 0, 0, 1]))
+        if i == 0:
+            print(f"外参矩阵E:\n", extrinsic_matrix_complete)
 else:
     print("未找到足够的棋盘格角点进行标定！")

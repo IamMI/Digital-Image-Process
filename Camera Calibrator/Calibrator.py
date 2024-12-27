@@ -66,6 +66,8 @@ def main(image_name_list):
     # Get Extrinsics Matrix
     E_list = utils.compute_extrinsics(H_list, A)
     
+    
+    np.set_printoptions(precision=2)
     print("内参矩阵A:")
     print(A)
     print("外参矩阵E:")

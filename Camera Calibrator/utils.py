@@ -194,24 +194,73 @@ def world_to_camera(world_points, R, t):
         
     return np.dot(R, world_points.T).T + t
 
-def distort_points(k1, k2, k3, points, mtx, R, t):
-    # 1. Transform from world to camera
-    camera_points = world_to_camera(points, R, t)
+def distort_points(camera_points, pixel, mtx, image):
+    """_summary_
     
-    # 2. Project to image plane
+    Args:
+        k1 (float): Radial distortion coefficient
+        k2 (float): Radial distortion coefficient
+        camera_points (np.ndarray): Camera coordinate of corners
+        pixel (np.ndarray): Pixel coordinate of corners
+        mtx (np.ndarray): Intrinsic parameters
+        R (np.ndarray): Rotation Matrix
+        T (np.ndarray): Translation Matrix
+    
+    Returns:
+        error (np.ndarray): Error between distorted and undistorted points
+    """
+    # 将相机坐标投影到图像平面
+    # 使用内参矩阵 K 进行投影，投影公式: [x_img, y_img] = K * [x_c / z_c, y_c / z_c]
     x_c, y_c, z_c = camera_points.T
-    x_ideal = (x_c / z_c) * mtx[0, 0] + mtx[0, 2]  # fx * (x_c / z_c) + cx
-    y_ideal = (y_c / z_c) * mtx[1, 1] + mtx[1, 2]  # fy * (y_c / z_c) + cy
+    U = (x_c / z_c) * mtx[0, 0] + (y_c / z_c) * mtx[0, 1] + mtx[0, 2]  # fx * (x_c / z_c) + cx
+    V = (y_c / z_c) * mtx[1, 1] + mtx[1, 2]  # fy * (y_c / z_c) + cy
+    cx = mtx[0, 2]
+    cy = mtx[1, 2]
+    r = np.sqrt(x_c**2 + y_c**2)
     
-    # 3. 应用径向畸变
-    r_squared = x_ideal**2 + y_ideal**2
-    r = np.sqrt(r_squared)
+    n = camera_points.shape[0]
+    U_hat = pixel[:, 0]
+    V_hat = pixel[:, 1]
+
+    # 构造矩阵 D
+    D = np.zeros((2 * n, 2))
+    for i in range(n):
+        D[2 * i] = [(U[i] - cx) * r[i]**2/z_c[i]**2, (U[i] - cx) * r[i]**4/z_c[i]**4]
+        D[2 * i + 1] = [(V[i] - cy) * r[i]**2/z_c[i]**2, (V[i] - cy) * r[i]**4/z_c[i]**4]
+
+    # 构造向量 d
+    d = np.zeros(2 * n)
+    for i in range(n):
+        d[2 * i] = U_hat[i] - U[i]
+        d[2 * i + 1] = V_hat[i] - V[i]
+
+    # 最小二乘解
+    k, _, _, _ = np.linalg.lstsq(D, d, rcond=None)
+        
+    # 绘图
+    if True:
+        x_img = cx + (U - cx)*(1+k[0]*r**2/z_c**2 + k[1]*r**4/z_c**4)
+        y_img = cy + (V - cy)*(1+k[0]*r**2/z_c**2 + k[1]*r**4/z_c**4)
+        
+        # 将投影结果转化为整数坐标
+        image_points = np.vstack([x_img, y_img]).T
+        image_points = np.round(image_points).astype(int)  # 转为整数像素坐标
+        
+        # 在图像上绘制红色圆圈
+        image_with_projection = image.copy()
+        for point in image_points:
+            cv2.circle(image_with_projection, tuple(point), radius=5, color=(255, 255, 255), thickness=-1)  # 红色圈
+
+        # plt.imshow(image_with_projection, cmap='gray')
+        # plt.show()
+        plt.imsave('./Camera Calibrator/chessboard/disorted_image_with_projection.png', image_with_projection, cmap='gray')
+        
+        
+    return k
     
-    # 4. 计算畸变后的坐标
-    x_distorted = x_ideal * (1 + k1 * r_squared + k2 * r_squared**2 + k3 * r_squared**3)
-    y_distorted = y_ideal * (1 + k1 * r_squared + k2 * r_squared**2 + k3 * r_squared**3)
     
-    return np.vstack([x_distorted, y_distorted]).T
+    
+    
 
   
 def get_distorted(K, R, T, image):
@@ -230,24 +279,17 @@ def get_distorted(K, R, T, image):
     image = copy.deepcopy(image)
     pixel = get_corner_pixel(image)
     world = get_corner_world()
+    camera_points = world_to_camera(world, R, T)
 
-    def cost_function(params, world, pixel, mtx):
-        k1, k2, k3 = params
-        
-        distorted_points = distort_points(k1, k2, k3, world, mtx, R, T)
-        
-        error = distorted_points - pixel
-        return error.ravel()
-    
-    
-    # Initial guess
-    initial_guess = [0.0, 0.0, 0.0]
+
     # Solve
-    result = least_squares(cost_function, initial_guess, args=(world, pixel, K))
+    k = distort_points(camera_points, pixel, K, image)
     
-    k1_opt, k2_opt, k3_opt = result.x
-    print(f"Optimized radial distortion coefficients: k1={k1_opt}, k2={k2_opt}, k3={k3_opt}")
-    return k1_opt, k2_opt, k3_opt
+    k1_opt, k2_opt = k[0], k[1] 
+    np.set_printoptions(precision=2)
+    print(f"Optimized radial distortion coefficients: k1={k1_opt}, k2={k2_opt}")
+    
+    return k1_opt, k2_opt
 
 
     

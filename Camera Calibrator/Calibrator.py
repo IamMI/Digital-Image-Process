@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 import utils
 
-def project_world_to_image(R, T, K, image):
+def project_world_to_image(R, T, K, k1, k2, k3, image):
     """
     将世界坐标点投影到图片中，并绘制红色圈圈。
     
@@ -24,7 +24,7 @@ def project_world_to_image(R, T, K, image):
     # 将相机坐标投影到图像平面
     # 使用内参矩阵 K 进行投影，投影公式: [x_img, y_img] = K * [x_c / z_c, y_c / z_c]
     x_c, y_c, z_c = camera_points.T
-    x_img = (x_c / z_c) * K[0, 0] + K[0, 2]  # fx * (x_c / z_c) + cx
+    x_img = (x_c / z_c) * K[0, 0] + (y_c / z_c) * K[0, 1] + K[0, 2]  # fx * (x_c / z_c) + cx
     y_img = (y_c / z_c) * K[1, 1] + K[1, 2]  # fy * (y_c / z_c) + cy
     
     # 将投影结果转化为整数坐标
@@ -73,8 +73,8 @@ def main(image_name_list):
     print("外参矩阵E:")
     print(E_list[0])
     
-    # project_world_to_image(E_list[0][:3, :3], E_list[0][:3, 3], A, image_list[0])
-    utils.get_distorted(A, E_list[0][:3, :3], E_list[0][:3, 3], image)
+    # project_world_to_image(E_list[0][:3, :3], E_list[0][:3, 3], A, 0, 0, 0, image_list[0])
+    k1, k2, k3 = utils.get_distorted(A, E_list[0][:3, :3], E_list[0][:3, 3], image_list[0])
     
     
     

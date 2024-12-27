@@ -148,10 +148,15 @@ def get_A(B):
 
     # 计算内参  
     v0 = (B12 * B13 - B11 * B23) / (B11 * B22 - B12**2)  
-    alpha = np.sqrt(1 / B11)  
-    beta = np.sqrt(B11 / (B11 * B22 - B12**2))  
-    gamma = -B12 * alpha**2 * beta  
-    u0 = gamma * v0 / beta - B13 * alpha**2 
+    u0 = (-B12 * v0 - B13)  / B11
+    rho = B33 - B22 * v0**2 - B11 * u0**2 - 2 * B12 * u0 * v0
+    alpha = np.sqrt(rho / B11)
+    beta = np.sqrt(rho * B11 / (B11 * B22 - B12**2))
+    gamma = -B12 * beta / B11
+    # alpha = np.sqrt(1 / B11)  
+    # beta = np.sqrt(B11 / (B11 * B22 - B12**2))  
+    # gamma = -B12 * alpha**2 * beta  
+    # u0 = gamma * v0 / beta - B13 * alpha**2 
 
     # 生成 A 矩阵  
     A = np.array([[alpha, gamma, u0],  

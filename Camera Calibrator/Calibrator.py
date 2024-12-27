@@ -74,7 +74,7 @@ def main(image_name_list):
     print(E_list[0])
     
     # project_world_to_image(E_list[0][:3, :3], E_list[0][:3, 3], A, 0, 0, 0, image_list[0])
-    k1, k2, k3 = utils.get_distorted(A, E_list[0][:3, :3], E_list[0][:3, 3], image_list[0])
+    k1, k2 = utils.get_distorted(A, E_list[0][:3, :3], E_list[0][:3, 3], image_list[0])
     
     
     
